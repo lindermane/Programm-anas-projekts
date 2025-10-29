@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Planner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Budget Planner</h1>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item"><a class="nav-link" href="#income">Income</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#expenses">Expenses</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#categories">Categories</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#goals">Goals</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#charts">Charts</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#currency">Currency</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <section id="income" class="mt-4">
+            <h2>Add Income</h2>
+            <form id="incomeForm">
+                <div class="mb-3">
+                    <label for="incomeAmount" class="form-label">Amount</label>
+                    <input type="number" step="0.01" class="form-control" id="incomeAmount" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Income</button>
+            </form>
+        </section>
+
+        <section id="expenses" class="mt-4">
+            <h2>Add Expense</h2>
+            <form id="expenseForm">
+                <div class="mb-3">
+                    <label for="expenseAmount" class="form-label">Amount</label>
+                    <input type="number" step="0.01" class="form-control" id="expenseAmount" required>
+                </div>
+                <div class="mb-3">
+                    <label for="expenseCategory" class="form-label">Category</label>
+                    <select class="form-select" id="expenseCategory" required>
+                        <option value="Transport">Transport</option>
+                        <option value="Food">Food</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Savings">Savings</option>
+                        <option value="Bills">Bills</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="expenseDate" class="form-label">Date (for recurring)</label>
+                    <input type="date" class="form-control" id="expenseDate">
+                </div>
+                <div class="mb-3">
+                    <label for="recurringInterval" class="form-label">Recurring Interval (days, 0 for one-time)</label>
+                    <input type="number" class="form-control" id="recurringInterval" value="0">
+                </div>
+                <button type="submit" class="btn btn-primary">Add Expense</button>
+            </form>
+        </section>
+
+        <section id="categories" class="mt-4">
+            <h2>Categories</h2>
+            <div id="categoryList"></div>
+            <button class="btn btn-secondary mt-3" onclick="transferFunds()">Transfer Funds</button>
+        </section>
+
+        <section id="goals" class="mt-4">
+            <h2>Goals</h2>
+            <form id="goalForm">
+                <div class="mb-3">
+                    <label for="goalName" class="form-label">Goal Name</label>
+                    <input type="text" class="form-control" id="goalName" required>
+                </div>
+                <div class="mb-3">
+                    <label for="goalAmount" class="form-label">Target Amount</label>
+                    <input type="number" step="0.01" class="form-control" id="goalAmount" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Goal</button>
+            </form>
+            <div id="goalList"></div>
+        </section>
+
+        <section id="charts" class="mt-4">
+            <h2>Charts</h2>
+            <canvas id="balanceChart"></canvas>
+        </section>
+
+        <section id="currency" class="mt-4">
+            <h2>Currency Converter</h2>
+            <form id="currencyForm">
+                <div class="mb-3">
+                    <label for="convertAmount" class="form-label">Amount</label>
+                    <input type="number" step="0.01" class="form-control" id="convertAmount" required>
+                </div>
+                <div class="mb-3">
+                    <label for="fromCurrency" class="form-label">From Currency</label>
+                    <input type="text" class="form-control" id="fromCurrency" value="USD" required>
+                </div>
+                <div class="mb-3">
+                    <label for="toCurrency" class="form-label">To Currency</label>
+                    <input type="text" class="form-control" id="toCurrency" value="EUR" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Convert</button>
+            </form>
+            <div id="conversionResult"></div>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
