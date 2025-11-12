@@ -9,13 +9,19 @@ let categories = {
 };
 let goals = [];
 let expenses = [];
-let allocationTemplate = { Transport: 0.1, Food: 0.2, Entertainment: 0.1, Personal: 0.2, Savings: 0.2, Bills: 0.2 }; // Example: 10% to Transport, etc.
+let allocationTemplate = {}; // Example: 10% to Transport, etc.
 
 // Load data from localStorage
 function loadData() {
     if (localStorage.getItem('categories')) categories = JSON.parse(localStorage.getItem('categories'));
     if (localStorage.getItem('goals')) goals = JSON.parse(localStorage.getItem('goals'));
     if (localStorage.getItem('expenses')) expenses = JSON.parse(localStorage.getItem('expenses'));
+    if (localStorage.getItem('allocationTemplate')) {
+        allocationTemplate = JSON.parse(localStorage.getItem('allocationTemplate'));
+    } else {
+        // Default template if none saved
+        allocationTemplate = { Transport: 0.1, Food: 0.2, Entertainment: 0.1, Personal: 0.2, Savings: 0.2, Bills: 0.2 };
+    }
     updateDisplay();
 }
 
@@ -24,6 +30,7 @@ function saveData() {
     localStorage.setItem('categories', JSON.stringify(categories));
     localStorage.setItem('goals', JSON.stringify(goals));
     localStorage.setItem('expenses', JSON.stringify(expenses));
+    localStorage.setItem('allocationTemplate', JSON.stringify(allocationTemplate));
 }
 
 // Update UI
@@ -32,7 +39,36 @@ function updateDisplay() {
     document.getElementById('goalList').innerHTML = goals.map(goal => `<p>${goal.name}: $${goal.current.toFixed(2)} / $${goal.target.toFixed(2)}</p>`).join('');
     updateChart();
     checkReminders();
+    populateAllocationForm();
 }
+
+// Function to populate the allocation form (assuming you add a form with inputs like id="transportAlloc", etc.)
+function populateAllocationForm() {
+    Object.keys(allocationTemplate).forEach(cat => {
+        const inputId = cat.toLowerCase() + 'Alloc'; // e.g., transportAlloc
+        if (document.getElementById(inputId)) {
+            document.getElementById(inputId).value = (allocationTemplate[cat] * 100).toFixed(1); // Show as percentage
+        }
+    });
+}
+// Allocation Template form (new addition)
+document.getElementById('allocationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    let total = 0;
+    Object.keys(categories).forEach(cat => {
+        const inputId = cat.toLowerCase() + 'Alloc';
+        const percent = parseFloat(document.getElementById(inputId).value) / 100;
+        allocationTemplate[cat] = percent;
+        total += percent;
+    });
+    if (Math.abs(total - 1.0) > 0.01) { // Allow small tolerance
+        alert('Percentages must sum to 100%. Current sum: ' + (total * 100).toFixed(1) + '%');
+        return;
+    }
+    saveData();
+    updateDisplay();
+    alert('Allocation template updated!');
+});
 
 // Income form
 document.getElementById('incomeForm').addEventListener('submit', function(e) {

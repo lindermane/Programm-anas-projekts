@@ -1,5 +1,7 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,9 +10,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
+
     <div class="container mt-4">
+
         <h1>Budget Planner</h1>
+
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <div class="container-fluid">
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -21,6 +27,7 @@
                         <li class="nav-item"><a class="nav-link" href="#income">Income</a></li>
                         <li class="nav-item"><a class="nav-link" href="#expenses">Expenses</a></li>
                         <li class="nav-item"><a class="nav-link" href="#categories">Categories</a></li>
+                        <li class ="nav-item"><a class="nav-link" href="#allocation">Allocation</li>
                         <li class="nav-item"><a class="nav-link" href="#goals">Goals</a></li>
                         <li class="nav-item"><a class="nav-link" href="#charts">Charts</a></li>
                         <li class="nav-item"><a class="nav-link" href="#currency">Currency</a></li>
@@ -76,6 +83,42 @@
             <button class="btn btn-secondary mt-3" onclick="transferFunds()">Transfer Funds</button>
         </section>
 
+        <section id="allocation" class="mt-4">
+            <h2>Allocation Template</h2>
+            <p>Set the percentage of your income to allocate to each category (must sum to 100%).</p>
+            <form id="allocationForm">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="transportAlloc" class="form-label">Transport %</label>
+                        <input type="number" step="0.1" min="0" max="100" class="form-control" id="transportAlloc" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="foodAlloc" class="form-label">Food %</label>
+                        <input type="number" step="0.1" min="0" max="100" class="form-control" id="foodAlloc" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="entertainmentAlloc" class="form-label">Entertainment %</label>
+                        <input type="number" step="0.1" min="0" max="100" class="form-control" id="entertainmentAlloc" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="personalAlloc" class="form-label">Personal %</label>
+                        <input type="number" step="0.1" min="0" max="100" class="form-control" id="personalAlloc" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="savingsAlloc" class="form-label">Savings %</label>
+                        <input type="number" step="0.1" min="0" max="100" class="form-control" id="savingsAlloc" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="billsAlloc" class="form-label">Bills %</label>
+                        <input type="number" step="0.1" min="0" max="100" class="form-control" id="billsAlloc" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Allocation</button>
+            </form>
+        </section>
+
         <section id="goals" class="mt-4">
             <h2>Goals</h2>
             <form id="goalForm">
@@ -121,4 +164,5 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>
 </body>
+
 </html>
