@@ -30,6 +30,7 @@
                         <li class ="nav-item"><a class="nav-link" href="#allocation">Allocation</li>
                         <li class="nav-item"><a class="nav-link" href="#goals">Goals</a></li>
                         <li class="nav-item"><a class="nav-link" href="#charts">Charts</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#history">History</a></li>
                         <li class="nav-item"><a class="nav-link" href="#currency">Currency</a></li>
                     </ul>
                 </div>
@@ -78,7 +79,12 @@
         </section>
 
         <section id="categories" class="mt-4">
-            <h2>Categories</h2>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>Categories</h2>
+            <div class="alert alert-info mb-0 py-2 px-3" style="font-size: 1.1rem;">
+                Unallocated Funds: $<span id="unallocatedDisplay">0.00</span>
+            </div>
+            </div>
             <div id="categoryList"></div>
             <form id="addCategoryForm" class="mt-3">
                 <div class="mb-3">
@@ -88,12 +94,11 @@
                 <button type="submit" class="btn btn-primary">Add Category</button>
             </form>
             <button class="btn btn-secondary mt-3" onclick="transferFunds()">Transfer Funds</button>
-            <button class="btn btn-secondary mt-3" onclick="transferFunds()">Transfer Funds</button>
         </section>
 
         <section id="allocation" class="mt-4">
             <h2>Allocation Template</h2>
-            <p>Set the percentage of your income to allocate to each category (must sum to 100%).</p>
+            <p>Set the percentage of your income to allocate to each category (can be less than 100%, remainder goes to Unallocated Funds).</p>
             <div id="allocationContainer">
                 <form id="allocationForm">
                     <div class="row">
@@ -149,9 +154,26 @@
             <div id="goalList"></div>
         </section>
 
+        <section id="history" class="mt-4">
+            <h2>Action History</h2>
+            <div class="mb-3">
+                <button class="btn btn-danger btn-sm" onclick="clearHistory()">Clear All History</button>
+            </div>
+            <div id="historyList" class="history-container"></div>
+        </section>
+
         <section id="charts" class="mt-4">
             <h2>Charts</h2>
-            <canvas id="balanceChart"></canvas>
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Category balance</h4>
+                    <canvas id="balanceChart"></canvas>
+                </div>
+                <div class="col-md-6">
+                    <h4>Income vs Expenses</h4>
+                    <canvas id="incomeExpenseChart"></canvas>
+                </div>
+            </div>
         </section>
 
         <section id="currency" class="mt-4">

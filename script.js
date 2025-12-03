@@ -4,13 +4,16 @@ let categories = {
     Food: 0,
     Entertainment: 0,
     Personal: 0,
-    Savings: 0,
     Bills: 0
 };
 let goals = [];
 let expenses = [];
 let allocationTemplate = {}; // Example: 10% to Transport, etc.
 let unallocatedFunds = 0;
+let actionHistory = [];
+
+let balanceChartInstance = null;
+let incomeExpenseChartInstance = null; // Chart references
 
 // Load data from localStorage
 function loadData() {
@@ -22,11 +25,15 @@ function loadData() {
         allocationTemplate = JSON.parse(localStorage.getItem('allocationTemplate'));
     } else {
         // Default template if none saved
-        allocationTemplate = { Transport: 0.1, Food: 0.2, Entertainment: 0.1, Personal: 0.2, Savings: 0.2, Bills: 0.2 };
+        allocationTemplate = { Transport: 0.1, Food: 0.2, Entertainment: 0.1, Personal: 0.2, Bills: 0.4 };
+    }
+    if (localStorage.getItem('actionHistory')) {
+        actionHistory = JSON.parse(localStorage.getItem('actionHistory'))
     }
     updateDisplay();
     setupAllocationForm();
 }
+
 
 // Save data to localStorage
 function saveData() {
@@ -35,14 +42,29 @@ function saveData() {
     localStorage.setItem('expenses', JSON.stringify(expenses));
     localStorage.setItem('unallocatedFunds', unallocatedFunds.toString());
     localStorage.setItem('allocationTemplate', JSON.stringify(allocationTemplate));
+    localStorage.setItem('actionHistory', JSON.stringify(actionHistory));
+}
+
+function addActionToHistory(type, description, amount, category = '') {
+    const action = {
+        id: Date.now(),
+        type: type, // 'income', 'expense', 'adjustment', 'transfer', 'goal'
+        description: description,
+        amount: amount,
+        category: category,
+        date: new Date().toISOString()
+    };
+    actionHistory.unshift(action); // Add to beginning
+    saveData();
 }
 
 // Update UI
 function updateDisplay() {
+    document.getElementById('unallocatedDisplay').textContent = unallocatedFunds.toFixed(2)
     // Buttons for adjusting sums and removing categories
     document.getElementById('categoryList').innerHTML = Object.keys(categories).map(cat => `
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <span>${cat}: $${categories[cat].toFixed(2)}</span>
+            <span>${cat}: ${categories[cat].toFixed(2)}</span>
             <div class="d-flex align-items-center">
                 <input type="number" step="0.01" class="form-control form-control-sm me-1" id="adjust-${cat}" placeholder="Amount" style="width: 100px;">
                 <button class="btn btn-sm btn-danger me-1" onclick="adjustSumManual('${cat}', false)">-</button>
@@ -85,10 +107,162 @@ function updateDisplay() {
                 <button class="btn btn-sm btn-warning" onclick="removeGoal(${index})">Remove</button>
             </div>
         </div>
-    `.join('');
+    `.join(''));
+    updateHistoryDisplay();
 
     updateChart();
     checkReminders();
+}
+
+function updateHistoryDisplay() { // History display function
+    const historyContainer = document.getElementById('historyList');
+    if (actionHistory.length === 0) {
+        historyContainer.innerHTML = '<p class="text-muted">No actions yet.</p>';
+        return;
+    }
+    
+    historyContainer.innerHTML = actionHistory.map((action, index) => {
+        const date = new Date(action.date);
+        const dateStr = date.toLocaleString();
+        let badgeClass = '';
+        let sign = '';
+        
+        switch(action.type) {
+            case 'income':
+                badgeClass = 'bg-success';
+                sign = '+';
+                break;
+            case 'expense':
+                badgeClass = 'bg-danger';
+                sign = '-';
+                break;
+            case 'adjustment':
+                badgeClass = action.amount >= 0 ? 'bg-success' : 'bg-danger';
+                sign = action.amount >= 0 ? '+' : '';
+                break;
+            case 'transfer':
+                badgeClass = 'bg-info';
+                sign = '';
+                break;
+            case 'goal':
+                badgeClass = 'bg-warning';
+                sign = action.amount >= 0 ? '+' : '';
+                break;
+        }
+        
+        return `
+            <div class="history-item card mb-2">
+                <div class="card-body p-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                            <span class="badge ${badgeClass}">${action.type.toUpperCase()}</span>
+                            <span class="ms-2">${action.description}</span>
+                            ${action.category ? `<span class="badge bg-secondary ms-2">${action.category}</span>` : ''}
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <strong class="me-3">${sign}$${Math.abs(action.amount).toFixed(2)}</strong>
+                            <input type="number" step="0.01" class="form-control form-control-sm me-1" id="edit-history-${action.id}" value="${action.amount}" style="width: 100px;">
+                            <button class="btn btn-sm btn-primary me-1" onclick="editHistoryAction(${action.id})">Update</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteHistoryAction(${action.id})">Delete</button>
+                        </div>
+                    </div>
+                    <small class="text-muted">${dateStr}</small>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function editHistoryAction(actionId) { // Edit History
+    const action = actionHistory.find(a => a.id === actionId);
+    if (!action) return;
+    
+    const newAmount = parseFloat(document.getElementById(`edit-history-${actionId}`).value);
+    if (isNaN(newAmount)) {
+        alert('Please enter a valid amount.');
+        return;
+    }
+    
+    const oldAmount = action.amount;
+    const difference = newAmount - oldAmount;
+    
+    // Update the budget based on action type
+    switch(action.type) {
+        case 'income':
+            // Reverse old allocation and apply new
+            Object.keys(allocationTemplate).forEach(cat => {
+                categories[cat] = categories[cat] - (oldAmount * allocationTemplate[cat]) + (newAmount * allocationTemplate[cat]);
+            });
+            let totalAlloc = Object.values(allocationTemplate).reduce((sum, val) => sum + val, 0);
+            unallocatedFunds = unallocatedFunds - (oldAmount * (1 - totalAlloc)) + (newAmount * (1 - totalAlloc));
+            break;
+        case 'expense':
+            categories[action.category] = categories[action.category] + oldAmount - newAmount;
+            break;
+        case 'adjustment':
+            categories[action.category] = categories[action.category] - difference;
+            break;
+        case 'goal':
+            const goalIndex = goals.findIndex(g => g.name === action.category);
+            if (goalIndex >= 0) {
+                goals[goalIndex].current = goals[goalIndex].current - difference;
+            }
+            break;
+    }
+    
+    action.amount = newAmount;
+    action.description = action.description.replace(/\$[\d.]+/, `$${newAmount.toFixed(2)}`);
+    
+    saveData();
+    updateDisplay();
+    alert('History action updated!');
+}
+
+function deleteHistoryAction(actionId) { //Delete history
+    if (!confirm('Are you sure you want to delete this action? This will reverse its effect on your budget.')) {
+        return;
+    }
+    
+    const actionIndex = actionHistory.findIndex(a => a.id === actionId);
+    if (actionIndex === -1) return;
+    
+    const action = actionHistory[actionIndex];
+    
+    // Reverse the action's effect
+    switch(action.type) {
+        case 'income':
+            Object.keys(allocationTemplate).forEach(cat => {
+                categories[cat] -= action.amount * allocationTemplate[cat];
+            });
+            let totalAlloc = Object.values(allocationTemplate).reduce((sum, val) => sum + val, 0);
+            unallocatedFunds -= action.amount * (1 - totalAlloc);
+            break;
+        case 'expense':
+            categories[action.category] += action.amount;
+            break;
+        case 'adjustment':
+            categories[action.category] -= action.amount;
+            break;
+        case 'goal':
+            const goalIndex = goals.findIndex(g => g.name === action.category);
+            if (goalIndex >= 0) {
+                goals[goalIndex].current -= action.amount;
+            }
+            break;
+    }
+    
+    actionHistory.splice(actionIndex, 1);
+    saveData();
+    updateDisplay();
+}
+
+function clearHistory() { //Clear history
+    if (!confirm('Are you sure you want to clear all history? This cannot be undone.')) {
+        return;
+    }
+    actionHistory = [];
+    saveData();
+    updateDisplay();
 }
 
 // Function to adjust category sum manual
@@ -101,6 +275,8 @@ function adjustSumManual(cat, isAdd) {
         return;
     }
     categories[cat] += isAdd ? amount : -amount;
+    categories[cat] += adjustAmount;
+    addActionToHistory('adjustment', `Manual ${isAdd ? 'addition' : 'subtraction'} of $${amount.toFixed(2)}`, adjustAmount, cat);
     input.value = ''; //Clear input after adjustment
     saveData();
     updateDisplay();
@@ -123,7 +299,9 @@ function adjustGoal(index, isAdd) {
         return;
     }
     goals[index].current += isAdd ? amount : -amount;
+    goals[index].current += adjustAmount;
     if (goals[index].current < 0) goals[index].current = 0; // Prevent negative
+    addActionToHistory('goal', `${isAdd ? 'Added to' : 'Removed from'} goal: ${goals[index].name}`, adjustAmount, goals[index].name);
     input.value = '';
     saveData();
     updateDisplay();
@@ -135,33 +313,7 @@ function removeGoal(index) {
     saveData();
     updateDisplay();
 }
-// // Function to populate the allocation form (assuming you add a form with inputs like id="transportAlloc", etc.)
-// function populateAllocationForm() {
-//     Object.keys(allocationTemplate).forEach(cat => {
-//         const inputId = cat.toLowerCase() + 'Alloc'; // e.g., transportAlloc
-//         if (document.getElementById(inputId)) {
-//             document.getElementById(inputId).value = (allocationTemplate[cat] * 100).toFixed(1); // Show as percentage
-//         }
-//     });
-// }
-// // Allocation Template form (new addition)
-// document.getElementById('allocationForm').addEventListener('submit', function(e) {
-//     e.preventDefault();
-//     let total = 0;
-//     Object.keys(categories).forEach(cat => {
-//         const inputId = cat.toLowerCase() + 'Alloc';
-//         const percent = parseFloat(document.getElementById(inputId).value) / 100;
-//         allocationTemplate[cat] = percent;
-//         total += percent;
-//     });
-//     if (Math.abs(total - 1.0) > 0.01) { // Allow small tolerance
-//         alert('Percentages must sum to 100%. Current sum: ' + (total * 100).toFixed(1) + '%');
-//         return;
-//     }
-//     saveData();
-//     updateDisplay();
-//     alert('Allocation template updated!');
-// });
+
 // Function to setup allocation form listener
 function setupAllocationForm() {
     document.getElementById('allocationForm').addEventListener('submit', function(e) {
@@ -173,27 +325,47 @@ function setupAllocationForm() {
             allocationTemplate[cat] = percent;
             total += percent;
         });
-        if (Math.abs(total - 1.0) > 0.01) { // Allow small tolerance
-            alert('Percentages must sum to 100%. Current sum: ' + (total * 100).toFixed(1) + '%');
+        if (total > 1.0) {
+            alert('Percentages cannot exceed 100%. Current sum: ' + (total * 100).toFixed(1) + '%');
             return;
         }
+        // if (Math.abs(total - 1.0) > 0.01) { // Allow small tolerance
+        //     alert('Percentages must sum to 100%. Current sum: ' + (total * 100).toFixed(1) + '%');
+        //     return;
+        // }
         saveData();
         updateDisplay();
-        alert('Allocation template updated!');
+        alert('Allocation template updated!' + ((1 - total) * 100).toFixed(1) + '% will go to unallocated funds.');
     });
 }
 
-// Income form-----------------------------------------------------------------------
+// Income form
 document.getElementById('incomeForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const amount = parseFloat(document.getElementById('incomeAmount').value);
-    // Auto-allocate
+
+    // Calc total alloc %
+    let totalAllocation = 0;
+    Object.keys(allocationTemplate).forEach(cat => {
+        totalAllocation += allocationTemplate[cat];
+    });
+
+    // Funds to cat
     Object.keys(allocationTemplate).forEach(cat => {
         categories[cat] += amount * allocationTemplate[cat];
     });
+
+    // Remainder in unallocated funds when alloc < 100%
+    if (totalAllocation < 1.0) {
+        unallocatedFunds += amount * (1.0 - totalAllocation);
+    }
+
+    addActionToHistory('income', `Income added: $${amount.toFixed(2)}`, amount)
+
     saveData();
     updateDisplay();
     alert('Income added and allocated!');
+    document.getElementById('incomeAmount').value = 0; // Clear input
 });
 
 // Expense form
@@ -214,10 +386,15 @@ document.getElementById('expenseForm').addEventListener('submit', function(e) {
             return;
         }
     }
+
     categories[category] -= amount;
     expenses.push({ amount, category, date, interval });
+    addActionToHistory('expense', `Expense: $${amount.toFixed(2)}`, amount, category);
     saveData();
     updateDisplay();
+    document.getElementById('expenseAmount').value = '';
+    document.getElementById('expenseDate').value = '';
+    document.getElementById('recurringInterval').value = 0;
 });
 
 // Transfer funds
@@ -228,6 +405,7 @@ function transferFunds() {
     if (categories[from] >= amt) {
         categories[from] -= amt;
         categories[to] += amt;
+        addActionToHistory('transfer', `Transfer from ${from} to ${to}`, amt, `${from} → ${to}`);
         saveData();
         updateDisplay();
     } else {
@@ -243,11 +421,17 @@ document.getElementById('goalForm').addEventListener('submit', function(e) {
     goals.push({ name, target, current: 0 });
     saveData();
     updateDisplay();
+
+    document.getElementById('goalName').value = '';
+    document.getElementById('goalAmount').value = '';
 });
 
 // Chart
 function updateChart() {
-    const ctx = document.getElementById('balanceChart').getContext('2d');
+    const ctx = document.getElementById('balanceChart').getContext('2d'); // balance ch
+    if (balanceChartInstance) {
+        balanceChartInstance.destroy();
+    }
     new Chart(ctx, {
         type: 'pie',
         data: {
@@ -256,6 +440,45 @@ function updateChart() {
                 data: Object.values(categories),
                 backgroundColor: ['red', 'blue', 'green', 'yellow', 'purple', 'orange']
             }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true
+        }
+    });
+
+    // Income vs Expenses Chart
+    const ctx2 = document.getElementById('incomeExpenseChart').getContext('2d');
+    if (incomeExpenseChartInstance) {
+        incomeExpenseChartInstance.destroy();
+    }
+    
+    const totalIncome = actionHistory
+        .filter(a => a.type === 'income')
+        .reduce((sum, a) => sum + a.amount, 0);
+    
+    const totalExpenses = actionHistory
+        .filter(a => a.type === 'expense')
+        .reduce((sum, a) => sum + a.amount, 0);
+    
+    incomeExpenseChartInstance = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: ['Income', 'Expenses', 'Net'],
+            datasets: [{
+                label: 'Amount ($)',
+                data: [totalIncome, totalExpenses, totalIncome - totalExpenses],
+                backgroundColor: ['#4BC0C0', '#FF6384', '#36A2EB']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
         }
     });
 }
@@ -284,6 +507,7 @@ document.getElementById('currencyForm').addEventListener('submit', function(e) {
     const rate = 0.85; // Example USD to EUR
     const result = amount * rate;
     document.getElementById('conversionResult').innerHTML = `<p>${amount} ${from} = ${result.toFixed(2)} ${to}</p>`;
+    document.getElementById('convertAmount').value = '';
 });
 
 // Add category form
