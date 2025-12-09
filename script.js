@@ -274,10 +274,39 @@ function adjustSumManual(cat, isAdd) {
         alert('Lūdzu ievadi derīgu pozitīvu summu');
         return;
     }
-    categories[cat] += isAdd ? amount : -amount;
-    categories[cat] += adjustAmount;
-    addActionToHistory('adjustment', `Manual ${isAdd ? 'addition' : 'subtraction'} of $${amount.toFixed(2)}`, adjustAmount, cat);
-    input.value = ''; //Clear input after adjustment
+    // Add money to cat
+    if (isAdd) {
+        if (unallocatedFunds < amount) {
+            alert(`Insufficient unallocated funds! Available: $${unallocatedFunds.toFixed(2)}`);
+            return
+        }
+        // Move from unalloc to cat
+        unallocatedFunds -= amount
+        categories[cat] += amount
+        addActionToHistory('adjustment', `Added $${amount.toFixed(2)} from unallocated funds`, amount, cat)
+    }
+    //Remove money from cat
+    else {
+        if (categories[cat] < amount) {
+            alert(`Insufficient funds in ${cat}! Available: $${categories[cat].toFixed(2)}`)
+            return;
+        }
+        //Ask user
+        const action = confirm(`Remove $${amount.toFixed(2)} from ${cat}.\n\nClick OK to move to Unallocated Funds\nClick Cancel to remove completely from budget`)
+        
+        if (action) {
+            // Move to unallocated funds
+            categories[cat] -= amount;
+            unallocatedFunds += amount;
+            addActionToHistory('adjustment', `Moved $${amount.toFixed(2)} to unallocated funds`, -amount, cat);
+        } else {
+            // Remove completely
+            categories[cat] -= amount;
+            addActionToHistory('adjustment', `Removed $${amount.toFixed(2)} completely`, -amount, cat);
+        }
+    }
+    
+    input.value = '' //Clear
     saveData();
     updateDisplay();
 }
@@ -298,9 +327,11 @@ function adjustGoal(index, isAdd) {
         alert('Lūdzu ievadi derīgu pozitīvu summu.');
         return;
     }
-    goals[index].current += isAdd ? amount : -amount;
+    
+    const adjustAmount = isAdd ? amount : -amount;
     goals[index].current += adjustAmount;
     if (goals[index].current < 0) goals[index].current = 0; // Prevent negative
+    
     addActionToHistory('goal', `${isAdd ? 'Added to' : 'Removed from'} goal: ${goals[index].name}`, adjustAmount, goals[index].name);
     input.value = '';
     saveData();
