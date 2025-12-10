@@ -15,6 +15,19 @@ let actionHistory = [];
 let balanceChartInstance = null;
 let incomeExpenseChartInstance = null; // Chart references
 
+// Modal State Variables
+let pendingRemovalCategory = null;
+let pendingRemovalAmount = 0;
+let removeModalInstance = null;
+
+// Sidebar Toggle Function
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebarNav');
+    const overlay = document.querySelector('.sidebar-overlay');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
 // Load data from localStorage
 function loadData() {
     if (localStorage.getItem('categories')) categories = JSON.parse(localStorage.getItem('categories'));
@@ -284,31 +297,59 @@ function adjustSumManual(cat, isAdd) {
         unallocatedFunds -= amount
         categories[cat] += amount
         addActionToHistory('adjustment', `Added $${amount.toFixed(2)} from unallocated funds`, amount, cat)
+        input.value = '' //Clear
+        saveData();
+        updateDisplay();
     }
-    //Remove money from cat
+    //Remove money from cat - use modal
     else {
         if (categories[cat] < amount) {
             alert(`Insufficient funds in ${cat}! Available: $${categories[cat].toFixed(2)}`)
             return;
         }
-        //Ask user
-        const action = confirm(`Remove $${amount.toFixed(2)} from ${cat}.\n\nClick OK to move to Unallocated Funds\nClick Cancel to remove completely from budget`)
         
-        if (action) {
-            // Move to unallocated funds
-            categories[cat] -= amount;
-            unallocatedFunds += amount;
-            addActionToHistory('adjustment', `Moved $${amount.toFixed(2)} to unallocated funds`, -amount, cat);
-        } else {
-            // Remove completely
-            categories[cat] -= amount;
-            addActionToHistory('adjustment', `Removed $${amount.toFixed(2)} completely`, -amount, cat);
-        }
+        // Store pending action data and show modal
+        pendingRemovalCategory = cat;
+        pendingRemovalAmount = amount;
+        
+        document.getElementById('modalCategoryName').textContent = cat;
+        document.getElementById('modalCategoryName2').textContent = cat;
+        document.getElementById('modalAmount').textContent = amount.toFixed(2);
+        
+        removeModalInstance = new bootstrap.Modal(document.getElementById('removeModal'));
+        removeModalInstance.show();
+    }
+}
+
+function handleRemoveAction(action) {
+    if (!pendingRemovalCategory || !pendingRemovalAmount) {
+        removeModalInstance.hide();
+        return;
     }
     
-    input.value = '' //Clear
+    const cat = pendingRemovalCategory;
+    const amount = pendingRemovalAmount;
+    const input = document.getElementById(`adjust-${cat}`);
+    
+    if (action === 'allocate') {
+        // Move to unallocated funds
+        categories[cat] -= amount;
+        unallocatedFunds += amount;
+        addActionToHistory('adjustment', `Moved $${amount.toFixed(2)} to unallocated funds`, -amount, cat);
+    } else if (action === 'remove') {
+        // Remove completely
+        categories[cat] -= amount;
+        addActionToHistory('adjustment', `Removed $${amount.toFixed(2)} completely`, -amount, cat);
+    }
+    
+    input.value = ''; //Clear
     saveData();
     updateDisplay();
+    
+    // Reset pending data and close modal
+    pendingRemovalCategory = null;
+    pendingRemovalAmount = 0;
+    removeModalInstance.hide();
 }
 
 // Function to remove category
@@ -407,20 +448,25 @@ document.getElementById('expenseForm').addEventListener('submit', function(e) {
     const date = document.getElementById('expenseDate').value;
     const interval = parseInt(document.getElementById('recurringInterval').value);
 
-    if (categories[category] < amount) {
-        const borrowFrom = prompt('Insufficient funds. Borrow from which category?');
-        if (borrowFrom && categories[borrowFrom] >= amount) {
-            categories[borrowFrom] -= amount;
-            categories[category] += amount;
-        } else {
-            alert('Cannot borrow.');
-            return;
+    // Only deduct for one-time expenses (interval = 0)
+    if (interval === 0) {
+        if (categories[category] < amount) {
+            const borrowFrom = prompt('Insufficient funds. Borrow from which category?');
+            if (borrowFrom && categories[borrowFrom] >= amount) {
+                categories[borrowFrom] -= amount;
+                categories[category] += amount;
+            } else {
+                alert('Cannot borrow.');
+                return;
+            }
         }
+        categories[category] -= amount;
+        addActionToHistory('expense', `Expense: $${amount.toFixed(2)}`, amount, category);
     }
-
-    categories[category] -= amount;
+    
+    // Add to expenses array (for both one-time and recurring)
     expenses.push({ amount, category, date, interval });
-    addActionToHistory('expense', `Expense: $${amount.toFixed(2)}`, amount, category);
+    
     saveData();
     updateDisplay();
     document.getElementById('expenseAmount').value = '';
@@ -517,15 +563,59 @@ function updateChart() {
 // Reminders
 function checkReminders() {
     const today = new Date();
-    expenses.forEach(exp => {
-        if (exp.interval > 0) {
+    const remindersList = document.getElementById('remindersList');
+    const remindersContainer = document.getElementById('recurringReminders');
+    
+    const upcomingExpenses = [];
+    
+    expenses.forEach((exp, index) => {
+        if (exp.interval > 0 && exp.date) {
             const expDate = new Date(exp.date);
-            const diff = (today - expDate) / (1000 * 60 * 60 * 24);
-            if (diff % exp.interval < 3) { // Due soon
-                alert(`Reminder: ${exp.category} expense due soon!`);
+            
+            // Calculate next occurrence
+            let nextDate = new Date(expDate);
+            while (nextDate < today) {
+                nextDate.setDate(nextDate.getDate() + exp.interval);
+            }
+            
+            const diffMs = nextDate - today;
+            const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+            
+            // Show all upcoming recurring expenses
+            if (daysLeft >= 0) {
+                upcomingExpenses.push({
+                    category: exp.category,
+                    amount: exp.amount,
+                    daysLeft: daysLeft,
+                    date: nextDate,
+                    expenseIndex: index
+                });
             }
         }
     });
+    
+    if (upcomingExpenses.length > 0) {
+        remindersContainer.style.display = 'block';
+        
+        // Sort by days left (soonest first)
+        upcomingExpenses.sort((a, b) => a.daysLeft - b.daysLeft);
+        
+        remindersList.innerHTML = upcomingExpenses.map(exp => {
+            const urgentClass = exp.daysLeft <= 3 ? 'urgent-reminder' : '';
+            const dayOfWeek = exp.date.toLocaleDateString('en-US', { weekday: 'long' });
+            const dateStr = exp.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            
+            return `
+                <div class="reminder-item ${urgentClass}">
+                    <strong>${exp.category}</strong>: $${exp.amount.toFixed(2)} due in 
+                    <span class="days-left">${exp.daysLeft} day${exp.daysLeft !== 1 ? 's' : ''}</span>
+                    - <strong>${dayOfWeek}</strong>, ${dateStr}
+                </div>
+            `;
+        }).join('');
+    } else {
+        remindersContainer.style.display = 'none';
+    }
 }
 
 // Currency converter (simple, assumes rates; in real app, use API)

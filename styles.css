@@ -42,18 +42,136 @@ body {
     background: #555;
 }
 
-/* //--------------------------- Added Chart Container Styles */
 #incomeExpenseChart {
     max-width: 400px;
     margin: 0 auto;
 }
 
+.hamburger-menu {
+    position: fixed;
+    left: 20px;
+    top: 20px;
+    width: 40px;
+    height: 40px;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 8px;
+    transition: all 0.3s ease;
+}
+
+.hamburger-menu:hover {
+    background-color: #0056b3;
+}
+
+.hamburger-menu span {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background-color: white;
+    margin: 3px 0;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: none;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+.sidebar-nav {
+    position: fixed;
+    left: -250px;
+    top: 0;
+    height: 100vh;
+    width: 200px;
+    background-color: #f8f9fa;
+    border-right: 2px solid #dee2e6;
+    z-index: 1000;
+    overflow-y: auto;
+    padding-top: 20px;
+    transition: left 0.3s ease;
+}
+
+.sidebar-nav.active {
+    left: 0;
+}
+
+.sidebar-content {
+    padding: 0 10px;
+}
+
+.sidebar-nav .nav-link {
+    padding: 12px 15px;
+    color: #333;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    transition: all 0.3s ease;
+}
+
+.sidebar-nav .nav-link:hover {
+    background-color: #007bff;
+    color: white;
+}
+
+.container {
+    margin-left: 0;
+}
+
+.reminder-item {
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+.urgent-reminder {
+    background-color: #f8d7da;
+    border-left-color: #dc3545;
+    animation: pulse 2s infinite;
+}
+
+.days-left {
+    font-weight: bold;
+}
+
+.urgent-reminder .days-left {
+    color: #dc3545;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
 @media (max-width: 768px) {
     .container {
+        margin-left: 0;
         padding: 10px;
+        padding-top: 70px; 
     }
     
-    /* //--------------------------- Added Mobile Responsive History */
     .history-item .d-flex {
         flex-direction: column;
         align-items: flex-start !important;
