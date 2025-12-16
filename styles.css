@@ -49,7 +49,7 @@ body {
 
 .hamburger-menu {
     position: fixed;
-    left: 20px;
+    right: 20px;
     top: 20px;
     width: 40px;
     height: 40px;
@@ -57,7 +57,7 @@ body {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    z-index: 1001;
+    z-index: 10;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -97,20 +97,20 @@ body {
 
 .sidebar-nav {
     position: fixed;
-    left: -250px;
+    right: -250px;
     top: 0;
     height: 100vh;
     width: 200px;
     background-color: #f8f9fa;
-    border-right: 2px solid #dee2e6;
+    border-left: 2px solid #dee2e6;
     z-index: 1000;
     overflow-y: auto;
     padding-top: 20px;
-    transition: left 0.3s ease;
+    transition: right 0.3s ease;
 }
 
 .sidebar-nav.active {
-    left: 0;
+    right: 0;
 }
 
 .sidebar-content {

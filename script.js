@@ -17,7 +17,9 @@ let incomeExpenseChartInstance = null; // Chart references
 
 // Modal State Variables
 let pendingRemovalCategory = null;
+let pendingRemovalGoalIndex = null;
 let pendingRemovalAmount = 0;
+let pendingRemovalType = null; // 'category' or 'goal'
 let removeModalInstance = null;
 
 // Sidebar Toggle Function
@@ -282,7 +284,6 @@ function clearHistory() { //Clear history
 function adjustSumManual(cat, isAdd) {
     const input = document.getElementById(`adjust-${cat}`);
     const amount = parseFloat(input.value);
-    console.log('Amount from input:', amount, 'isAdd:', isAdd) //Debug
     if (isNaN(amount) || amount <= 0) {
         alert('Lūdzu ievadi derīgu pozitīvu summu');
         return;
@@ -310,7 +311,9 @@ function adjustSumManual(cat, isAdd) {
         
         // Store pending action data and show modal
         pendingRemovalCategory = cat;
+        pendingRemovalGoalIndex = null;
         pendingRemovalAmount = amount;
+        pendingRemovalType = 'category';
         
         document.getElementById('modalCategoryName').textContent = cat;
         document.getElementById('modalCategoryName2').textContent = cat;
@@ -322,33 +325,66 @@ function adjustSumManual(cat, isAdd) {
 }
 
 function handleRemoveAction(action) {
-    if (!pendingRemovalCategory || !pendingRemovalAmount) {
+    if ((!pendingRemovalCategory && !pendingRemovalGoalIndex) || !pendingRemovalAmount) {
         removeModalInstance.hide();
         return;
     }
     
-    const cat = pendingRemovalCategory;
     const amount = pendingRemovalAmount;
-    const input = document.getElementById(`adjust-${cat}`);
+    let input = null;
     
-    if (action === 'allocate') {
-        // Move to unallocated funds
-        categories[cat] -= amount;
-        unallocatedFunds += amount;
-        addActionToHistory('adjustment', `Moved $${amount.toFixed(2)} to unallocated funds`, -amount, cat);
-    } else if (action === 'remove') {
-        // Remove completely
-        categories[cat] -= amount;
-        addActionToHistory('adjustment', `Removed $${amount.toFixed(2)} completely`, -amount, cat);
+    if (pendingRemovalType === 'goal' && pendingRemovalGoalIndex !== null) {
+        const goalIndex = pendingRemovalGoalIndex;
+        const goalName = goals[goalIndex].name;
+        input = document.getElementById(`adjust-goal-${goalIndex}`);
+        
+        if (action === 'allocate') {
+            // Move to unallocated funds
+            goals[goalIndex].current -= amount;
+            unallocatedFunds += amount;
+            addActionToHistory('goal', `Moved $${amount.toFixed(2)} from goal to unallocated funds`, -amount, goalName);
+        } else if (action === 'remove') {
+            // Remove completely
+            goals[goalIndex].current -= amount;
+            addActionToHistory('goal', `Removed $${amount.toFixed(2)} completely from goal`, -amount, goalName);
+        } else if (action === 'spent') {
+            // Record as expense
+            goals[goalIndex].current -= amount;
+            addActionToHistory('expense', `Expense: $${amount.toFixed(2)}`, amount, goalName);
+            // Also add to expenses array for consistency
+            expenses.push({ amount, category: goalName, date: new Date().toISOString().split('T')[0], interval: 0 });
+        }
+    } else if (pendingRemovalType === 'category' && pendingRemovalCategory) {
+        const cat = pendingRemovalCategory;
+        input = document.getElementById(`adjust-${cat}`);
+        
+        if (action === 'allocate') {
+            // Move to unallocated funds
+            categories[cat] -= amount;
+            unallocatedFunds += amount;
+            addActionToHistory('adjustment', `Moved $${amount.toFixed(2)} to unallocated funds`, -amount, cat);
+        } else if (action === 'remove') {
+            // Remove completely
+            categories[cat] -= amount;
+            addActionToHistory('adjustment', `Removed $${amount.toFixed(2)} completely`, -amount, cat);
+        } else if (action === 'spent') {
+            // Record as expense
+            categories[cat] -= amount;
+            addActionToHistory('expense', `Expense: $${amount.toFixed(2)}`, amount, cat);
+            // Also add to expenses array for consistency
+            expenses.push({ amount, category: cat, date: new Date().toISOString().split('T')[0], interval: 0 });
+        }
     }
     
-    input.value = ''; //Clear
+    if (input) input.value = ''; //Clear
     saveData();
     updateDisplay();
     
     // Reset pending data and close modal
     pendingRemovalCategory = null;
+    pendingRemovalGoalIndex = null;
     pendingRemovalAmount = 0;
+    pendingRemovalType = null;
     removeModalInstance.hide();
 }
 
@@ -369,14 +405,40 @@ function adjustGoal(index, isAdd) {
         return;
     }
     
-    const adjustAmount = isAdd ? amount : -amount;
-    goals[index].current += adjustAmount;
-    if (goals[index].current < 0) goals[index].current = 0; // Prevent negative
-    
-    addActionToHistory('goal', `${isAdd ? 'Added to' : 'Removed from'} goal: ${goals[index].name}`, adjustAmount, goals[index].name);
-    input.value = '';
-    saveData();
-    updateDisplay();
+    // Add money to goal
+    if (isAdd) {
+        if (unallocatedFunds < amount) {
+            alert(`Insufficient unallocated funds! Available: $${unallocatedFunds.toFixed(2)}`);
+            return;
+        }
+        // Move from unallocated to goal
+        unallocatedFunds -= amount;
+        goals[index].current += amount;
+        addActionToHistory('goal', `Added $${amount.toFixed(2)} to goal: ${goals[index].name}`, amount, goals[index].name);
+        input.value = '';
+        saveData();
+        updateDisplay();
+    }
+    // Remove money from goal - use modal
+    else {
+        if (goals[index].current < amount) {
+            alert(`Insufficient funds in goal ${goals[index].name}! Available: $${goals[index].current.toFixed(2)}`);
+            return;
+        }
+        
+        // Store pending action data and show modal
+        pendingRemovalGoalIndex = index;
+        pendingRemovalCategory = null;
+        pendingRemovalAmount = amount;
+        pendingRemovalType = 'goal';
+        
+        document.getElementById('modalCategoryName').textContent = goals[index].name;
+        document.getElementById('modalCategoryName2').textContent = goals[index].name;
+        document.getElementById('modalAmount').textContent = amount.toFixed(2);
+        
+        removeModalInstance = new bootstrap.Modal(document.getElementById('removeModal'));
+        removeModalInstance.show();
+    }
 }
 
 // Function to remove goal
@@ -505,55 +567,79 @@ document.getElementById('goalForm').addEventListener('submit', function(e) {
 
 // Chart
 function updateChart() {
-    const ctx = document.getElementById('balanceChart').getContext('2d'); // balance ch
+    // Category Balance Pie Chart
+    const balanceCanvas = document.getElementById('balanceChart');
+    if (!balanceCanvas) return; // Safety check
+    
+    const ctx = balanceCanvas.getContext('2d');
     if (balanceChartInstance) {
         balanceChartInstance.destroy();
     }
-    new Chart(ctx, {
+    
+    const categoryLabels = Object.keys(categories);
+    const categoryValues = Object.values(categories);
+    const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'];
+    
+    balanceChartInstance = new Chart(ctx, {
         type: 'pie',
         data: {
-            labels: Object.keys(categories),
+            labels: categoryLabels,
             datasets: [{
-                data: Object.values(categories),
-                backgroundColor: ['red', 'blue', 'green', 'yellow', 'purple', 'orange']
+                data: categoryValues,
+                backgroundColor: colors.slice(0, categoryLabels.length)
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true
+            plugins: {
+                legend: {
+                    position: 'right'
+                },
+                title: {
+                    display: true,
+                    text: 'Category Balance'
+                }
+            }
         }
     });
 
-    // Income vs Expenses Chart
-    const ctx2 = document.getElementById('incomeExpenseChart').getContext('2d');
+    // Income vs Expenses Pie Chart
+    const incomeExpenseCanvas = document.getElementById('incomeExpenseChart');
+    if (!incomeExpenseCanvas) return; // Safety check
+    
+    const ctx2 = incomeExpenseCanvas.getContext('2d');
     if (incomeExpenseChartInstance) {
         incomeExpenseChartInstance.destroy();
     }
     
+    // Only count income and expense types, explicitly exclude adjustments, transfers, and goals
     const totalIncome = actionHistory
-        .filter(a => a.type === 'income')
-        .reduce((sum, a) => sum + a.amount, 0);
+        .filter(a => a && a.type === 'income')
+        .reduce((sum, a) => sum + (a.amount || 0), 0);
     
     const totalExpenses = actionHistory
-        .filter(a => a.type === 'expense')
-        .reduce((sum, a) => sum + a.amount, 0);
+        .filter(a => a && a.type === 'expense')
+        .reduce((sum, a) => sum + (a.amount || 0), 0);
     
+    // Always show chart, even with zero values
     incomeExpenseChartInstance = new Chart(ctx2, {
-        type: 'bar',
+        type: 'pie',
         data: {
-            labels: ['Income', 'Expenses', 'Net'],
+            labels: ['Income', 'Expenses'],
             datasets: [{
-                label: 'Amount ($)',
-                data: [totalIncome, totalExpenses, totalIncome - totalExpenses],
-                backgroundColor: ['#4BC0C0', '#FF6384', '#36A2EB']
+                data: [totalIncome || 0, totalExpenses || 0],
+                backgroundColor: ['#4BC0C0', '#FF6384']
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
-            scales: {
-                y: {
-                    beginAtZero: true
+            plugins: {
+                legend: {
+                    position: 'right'
+                },
+                title: {
+                    display: true,
+                    text: 'Income vs Expenses'
                 }
             }
         }
