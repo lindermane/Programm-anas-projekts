@@ -17,7 +17,7 @@
             originalError.apply(console, args);
         };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -39,7 +39,6 @@
             <div class="sidebar-content">
                 <ul class="nav flex-column">
                     <li class="nav-item"><a class="nav-link" href="#income" onclick="toggleSidebar()">Income</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#expenses" onclick="toggleSidebar()">Expenses</a></li>
                     <li class="nav-item"><a class="nav-link" href="#categories" onclick="toggleSidebar()">Categories</a></li>
                     <li class="nav-item"><a class="nav-link" href="#allocation" onclick="toggleSidebar()">Allocation</a></li>
                     <li class="nav-item"><a class="nav-link" href="#goals" onclick="toggleSidebar()">Goals</a></li>
@@ -50,10 +49,6 @@
             </div>
         </nav>
 
-        <div id="recurringReminders" class="alert alert-warning mt-3" style="display: none;">
-            <h5>Upcoming Recurring Expenses:</h5>
-            <div id="remindersList"></div>
-        </div>
 
         <!-- <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <div class="container-fluid">
@@ -86,41 +81,11 @@
             </form>
         </section>
 
-        <section id="expenses" class="mt-4">
-            <h2>Add Expense</h2>
-            <form id="expenseForm">
-                <div class="mb-3">
-                    <label for="expenseAmount" class="form-label">Amount</label>
-                    <input type="number" step="0.01" class="form-control" id="expenseAmount" required>
-                </div>
-                <div class="mb-3">
-                    <label for="expenseCategory" class="form-label">Category</label>
-                    <select class="form-select" id="expenseCategory" required>
-                        <option value="Transport">Transport</option>
-                        <option value="Food">Food</option>
-                        <option value="Entertainment">Entertainment</option>
-                        <option value="Personal">Personal</option>
-                        <option value="Savings">Savings</option>
-                        <option value="Bills">Bills</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="expenseDate" class="form-label">Date (for recurring)</label>
-                    <input type="date" class="form-control" id="expenseDate">
-                </div>
-                <div class="mb-3">
-                    <label for="recurringInterval" class="form-label">Recurring Interval (days, 0 for one-time)</label>
-                    <input type="number" class="form-control" id="recurringInterval" value="0">
-                </div>
-                <button type="submit" class="btn btn-primary">Add Expense</button>
-            </form>
-        </section>
-
         <section id="categories" class="mt-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2>Categories</h2>
             <div class="alert alert-info mb-0 py-2 px-3" style="font-size: 1.1rem;">
-                Unallocated Funds: $<span id="unallocatedDisplay">0.00</span>
+                Unallocated Funds: $<input type="number" step="0.01" class="form-control form-control-sm d-inline-block" id="unallocatedDisplay" value="0.00" style="width: 120px; display: inline-block;" onchange="updateUnallocatedFunds()">
             </div>
             </div>
             <div id="categoryList"></div>
@@ -180,7 +145,7 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2>Goals</h2>
                 <div class="alert alert-info mb-0 py-2 px-3" style="font-size: 1.1rem;">
-                    Unallocated Funds: $<span id="unallocatedDisplayGoals">0.00</span>
+                    Unallocated Funds: $<input type="number" step="0.01" class="form-control form-control-sm d-inline-block" id="unallocatedDisplayGoals" value="0.00" style="width: 120px; display: inline-block;" onchange="updateUnallocatedFunds()">
                 </div>
             </div>
             <form id="goalForm" class="mt-3">
@@ -210,11 +175,15 @@
             <div class="row">
                 <div class="col-md-6">
                     <h4>Category balance</h4>
-                    <canvas id="balanceChart"></canvas>
+                    <div style="position: relative; height: 400px;">
+                        <canvas id="balanceChart"></canvas>
+                    </div>
                 </div>
                 <div class="col-md-6">
                     <h4>Income vs Expenses</h4>
-                    <canvas id="incomeExpenseChart"></canvas>
+                    <div style="position: relative; height: 400px;">
+                        <canvas id="incomeExpenseChart"></canvas>
+                    </div>
                 </div>
             </div>
         </section>
