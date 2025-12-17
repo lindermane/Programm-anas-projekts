@@ -33,7 +33,12 @@ function toggleSidebar() {
 // Load data from localStorage
 function loadData() {
     if (localStorage.getItem('categories')) categories = JSON.parse(localStorage.getItem('categories'));
-    if (localStorage.getItem('goals')) goals = JSON.parse(localStorage.getItem('goals'));
+    if (localStorage.getItem('goals')) {
+        const loadedGoals = JSON.parse(localStorage.getItem('goals'));
+        goals = Array.isArray(loadedGoals) ? loadedGoals : [];
+    } else {
+        goals = [];
+    }
     if (localStorage.getItem('expenses')) expenses = JSON.parse(localStorage.getItem('expenses'));
     if (localStorage.getItem('unallocatedFunds')) unallocatedFunds = parseFloat(localStorage.getItem('unallocatedFunds'));
     if (localStorage.getItem('allocationTemplate')) {
@@ -75,7 +80,14 @@ function addActionToHistory(type, description, amount, category = '') {
 
 // Update UI
 function updateDisplay() {
-    document.getElementById('unallocatedDisplay').textContent = unallocatedFunds.toFixed(2)
+    const unallocatedDisplay = document.getElementById('unallocatedDisplay');
+    if (unallocatedDisplay) {
+        unallocatedDisplay.textContent = unallocatedFunds.toFixed(2);
+    }
+    const unallocatedDisplayGoals = document.getElementById('unallocatedDisplayGoals');
+    if (unallocatedDisplayGoals) {
+        unallocatedDisplayGoals.textContent = unallocatedFunds.toFixed(2);
+    }
     // Buttons for adjusting sums and removing categories
     document.getElementById('categoryList').innerHTML = Object.keys(categories).map(cat => `
         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -112,17 +124,24 @@ function updateDisplay() {
     // Re-setup the allocation form listener after regeneration
     setupAllocationForm();
 
-    document.getElementById('goalList').innerHTML = goals.map((goal, index) => `
-    <div class="d-flex justify-content-between align-items-center mb-2">
-            <span>${goal.name}: ${goal.current.toFixed(2)} / ${goal.target.toFixed(2)}</span>
-            <div class="d-flex align-items-center">
-                <input type="number" step="0.01" class="form-control form-control-sm me-1" id="adjust-goal-${index}" placeholder="Amount" style="width: 100px;">
-                <button class="btn btn-sm btn-danger me-1" onclick="adjustGoal(${index}, false)">-</button>
-                <button class="btn btn-sm btn-success me-1" onclick="adjustGoal(${index}, true)">+</button>
-                <button class="btn btn-sm btn-warning" onclick="removeGoal(${index})">Remove</button>
+    // Update goals list
+    const goalListElement = document.getElementById('goalList');
+    if (goalListElement) {
+        if (!Array.isArray(goals)) {
+            goals = [];
+        }
+        goalListElement.innerHTML = goals.map((goal, index) => `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+                <span>${goal.name}: ${goal.current.toFixed(2)} / ${goal.target.toFixed(2)}</span>
+                <div class="d-flex align-items-center">
+                    <input type="number" step="0.01" class="form-control form-control-sm me-1" id="adjust-goal-${index}" placeholder="Amount" style="width: 100px;">
+                    <button class="btn btn-sm btn-danger me-1" onclick="adjustGoal(${index}, false)">-</button>
+                    <button class="btn btn-sm btn-success me-1" onclick="adjustGoal(${index}, true)">+</button>
+                    <button class="btn btn-sm btn-warning" onclick="removeGoal(${index})">Remove</button>
+                </div>
             </div>
-        </div>
-    `.join(''));
+        `).join('');
+    }
     updateHistoryDisplay();
 
     updateChart();
@@ -325,15 +344,17 @@ function adjustSumManual(cat, isAdd) {
 }
 
 function handleRemoveAction(action) {
-    if ((!pendingRemovalCategory && !pendingRemovalGoalIndex) || !pendingRemovalAmount) {
-        removeModalInstance.hide();
+    if ((!pendingRemovalCategory && pendingRemovalGoalIndex == null) || !pendingRemovalAmount) {
+        if (removeModalInstance) {
+            removeModalInstance.hide();
+        }
         return;
     }
     
     const amount = pendingRemovalAmount;
     let input = null;
     
-    if (pendingRemovalType === 'goal' && pendingRemovalGoalIndex !== null) {
+    if (pendingRemovalType === 'goal' && pendingRemovalGoalIndex != null) {
         const goalIndex = pendingRemovalGoalIndex;
         const goalName = goals[goalIndex].name;
         input = document.getElementById(`adjust-goal-${goalIndex}`);
@@ -401,7 +422,7 @@ function adjustGoal(index, isAdd) {
     const input = document.getElementById(`adjust-goal-${index}`);
     const amount = parseFloat(input.value);
     if (isNaN(amount) || amount <= 0) {
-        alert('Lūdzu ievadi derīgu pozitīvu summu.');
+        alert('Lūdzu ievadi derīgu pozitīvu summu');
         return;
     }
     
@@ -414,7 +435,7 @@ function adjustGoal(index, isAdd) {
         // Move from unallocated to goal
         unallocatedFunds -= amount;
         goals[index].current += amount;
-        addActionToHistory('goal', `Added $${amount.toFixed(2)} to goal: ${goals[index].name}`, amount, goals[index].name);
+        addActionToHistory('goal', `Added $${amount.toFixed(2)} from unallocated funds`, amount, goals[index].name);
         input.value = '';
         saveData();
         updateDisplay();
@@ -422,7 +443,7 @@ function adjustGoal(index, isAdd) {
     // Remove money from goal - use modal
     else {
         if (goals[index].current < amount) {
-            alert(`Insufficient funds in goal ${goals[index].name}! Available: $${goals[index].current.toFixed(2)}`);
+            alert(`Insufficient funds in ${goals[index].name}! Available: $${goals[index].current.toFixed(2)}`);
             return;
         }
         
@@ -443,6 +464,36 @@ function adjustGoal(index, isAdd) {
 
 // Function to remove goal
 function removeGoal(index) {
+    if (index < 0 || index >= goals.length) {
+        return;
+    }
+    
+    const goal = goals[index];
+    const goalName = goal.name;
+    const goalCurrent = goal.current;
+    const goalTarget = goal.target;
+    
+    // Ask for confirmation
+    if (!confirm(`Are you sure you want to delete the goal "${goalName}"?`)) {
+        return;
+    }
+    
+    // Handle money in the goal
+    if (goalCurrent > 0) {
+        // If goal sum is met (current >= target), log as expense
+        if (goalCurrent >= goalTarget) {
+            // Remove money and log as expense
+            addActionToHistory('expense', `Goal completed and removed: $${goalCurrent.toFixed(2)}`, goalCurrent, goalName);
+            // Also add to expenses array for consistency
+            expenses.push({ amount: goalCurrent, category: goalName, date: new Date().toISOString().split('T')[0], interval: 0 });
+        } else {
+            // Goal not met, add money back to unallocated funds
+            unallocatedFunds += goalCurrent;
+            addActionToHistory('goal', `Removed goal "${goalName}" - $${goalCurrent.toFixed(2)} returned to unallocated funds`, -goalCurrent, goalName);
+        }
+    }
+    
+    // Remove the goal
     goals.splice(index, 1);
     saveData();
     updateDisplay();
