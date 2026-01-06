@@ -8,21 +8,32 @@ let categories = {
 };
 let goals = [];
 let expenses = [];
-let allocationTemplate = {}; // Example: 10% to Transport, etc.
+let allocationTemplate = {};
 let unallocatedFunds = 0;
 let actionHistory = [];
 
 let balanceChartInstance = null;
-let incomeExpenseChartInstance = null; // Chart references
+let incomeExpenseChartInstance = null;
 
-// Modal State Variables
+const colorPalettes = {
+    default: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'],
+    pastel: ['#FFB3BA', '#BAFFC9', '#BAE1FF', '#FFFFBA', '#FFD9BA', '#E0BBE4', '#FEC8D8', '#D4F1F4'],
+    vibrant: ['#FF0080', '#FF8C00', '#FFD700', '#00FF00', '#00CED1', '#9370DB', '#FF1493', '#FF4500'],
+    earth: ['#8B4513', '#D2691E', '#CD853F', '#DEB887', '#F4A460', '#BC8F8F', '#A0522D', '#D2B48C'],
+    ocean: ['#006994', '#1E90FF', '#4169E1', '#0077BE', '#40E0D0', '#00CED1', '#5F9EA0', '#4682B4'],
+    sunset: ['#FF6B6B', '#FFA07A', '#FFD93D', '#FF8243', '#C73E1D', '#E94B3C', '#F4A261', '#E76F51']
+};
+
+let currentPalette = 'default';
+
+//
 let pendingRemovalCategory = null;
 let pendingRemovalGoalIndex = null;
 let pendingRemovalAmount = 0;
-let pendingRemovalType = null; // 'category' or 'goal'
+let pendingRemovalType = null;
 let removeModalInstance = null;
 
-// Sidebar Toggle Function
+// Sidebar Function
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebarNav');
     const overlay = document.querySelector('.sidebar-overlay');
@@ -50,6 +61,15 @@ function loadData() {
     if (localStorage.getItem('actionHistory')) {
         actionHistory = JSON.parse(localStorage.getItem('actionHistory'))
     }
+
+    if (localStorage.getItem('colorPalette')) {
+        currentPalette = localStorage.getItem('colorPalette');
+        const select = document.getElementById('paletteSelect');
+        if (select) {
+            select.value = currentPalette;
+        }
+    }
+
     updateDisplay();
     setupAllocationForm();
 }
@@ -68,13 +88,13 @@ function saveData() {
 function addActionToHistory(type, description, amount, category = '') {
     const action = {
         id: Date.now(),
-        type: type, // 'income', 'expense', 'adjustment', 'transfer', 'goal'
+        type: type,
         description: description,
         amount: amount,
         category: category,
         date: new Date().toISOString()
     };
-    actionHistory.unshift(action); // Add to beginning
+    actionHistory.unshift(action); // beginning
     saveData();
 }
 
@@ -88,7 +108,7 @@ function updateDisplay() {
     if (unallocatedDisplayGoals) {
         unallocatedDisplayGoals.value = unallocatedFunds.toFixed(2);
     }
-    // Buttons for adjusting sums and removing categories
+    // adjust sum and removing categories
     document.getElementById('categoryList').innerHTML = Object.keys(categories).map(cat => `
         <div class="d-flex justify-content-between align-items-center mb-2">
             <span>${cat}: ${categories[cat].toFixed(2)}</span>
@@ -101,7 +121,7 @@ function updateDisplay() {
         </div>
     `).join('');
 
-    // Regenerate allocation form dynamically
+    // Regen allocation form
     const allocContainer = document.getElementById('allocationContainer');
     allocContainer.innerHTML = `
         <form id="allocationForm">
@@ -117,7 +137,6 @@ function updateDisplay() {
         </form>
     `;
 
-    // Re-setup the allocation form listener after regeneration
     setupAllocationForm();
 
     // Update goals list
@@ -143,7 +162,7 @@ function updateDisplay() {
     updateChart();
 }
 
-function updateHistoryDisplay() { // History display function
+function updateHistoryDisplay() { // History display
     const historyContainer = document.getElementById('historyList');
     if (actionHistory.length === 0) {
         historyContainer.innerHTML = '<p class="text-muted">No actions yet.</p>';
@@ -206,7 +225,7 @@ function editHistoryAction(actionId) { // Edit History
     const action = actionHistory.find(a => a.id === actionId);
     if (!action) return;
     
-    // Check if trying to edit income and there are expenses
+    // Check if trying to edit income, warning
     if (action.type === 'income') {
         const hasExpenses = actionHistory.some(a => a && a.type === 'expense');
         if (hasExpenses) {
@@ -224,10 +243,10 @@ function editHistoryAction(actionId) { // Edit History
     const oldAmount = action.amount;
     const difference = newAmount - oldAmount;
     
-    // Update the budget based on action type
+    // Update the budget based on action
     switch(action.type) {
         case 'income':
-            // Reverse old allocation and apply new
+            // Reverse old alloc, apply new
             Object.keys(allocationTemplate).forEach(cat => {
                 categories[cat] = categories[cat] - (oldAmount * allocationTemplate[cat]) + (newAmount * allocationTemplate[cat]);
             });
@@ -238,50 +257,28 @@ function editHistoryAction(actionId) { // Edit History
             categories[action.category] = categories[action.category] + oldAmount - newAmount;
             break;
         case 'adjustment':
-            // Check if this adjustment affected unallocated funds
+            // Check if unalloc affected 
             if (action.description.includes('from unallocated funds')) {
-                // Positive amount: money moved FROM unallocated TO category
-                // Reverse old: unallocatedFunds += oldAmount, category -= oldAmount
-                // Apply new: unallocatedFunds -= newAmount, category += newAmount
-                // Net: unallocatedFunds += oldAmount - newAmount = -difference
-                // Net: category -= oldAmount + newAmount = +difference
                 categories[action.category] = categories[action.category] + difference;
                 unallocatedFunds = unallocatedFunds - difference;
             } else if (action.description.includes('to unallocated funds')) {
-                // Negative amount: money moved FROM category TO unallocated
-                // Reverse old: category += oldAmount, unallocatedFunds -= oldAmount
-                // Apply new: category -= newAmount, unallocatedFunds += newAmount
-                // Net: category += oldAmount - newAmount = +difference (difference is negative)
-                // Net: unallocatedFunds -= oldAmount + newAmount = -difference
                 categories[action.category] = categories[action.category] + difference;
                 unallocatedFunds = unallocatedFunds - difference;
             } else {
-                // "Removed completely" - no unallocated funds involved
                 categories[action.category] = categories[action.category] - difference;
             }
             break;
         case 'goal':
             const goalIndex = goals.findIndex(g => g.name === action.category);
             if (goalIndex >= 0) {
-                // Check if this goal action affected unallocated funds
+                // Check if goal action affected unalloc
                 if (action.description.includes('from unallocated funds')) {
-                    // Positive amount: money moved FROM unallocated TO goal
-                    // Reverse old: unallocatedFunds += oldAmount, goal -= oldAmount
-                    // Apply new: unallocatedFunds -= newAmount, goal += newAmount
-                    // Net: unallocatedFunds += oldAmount - newAmount = -difference
-                    // Net: goal -= oldAmount + newAmount = +difference
                     goals[goalIndex].current = goals[goalIndex].current + difference;
                     unallocatedFunds = unallocatedFunds - difference;
                 } else if (action.description.includes('to unallocated funds')) {
-                    // Negative amount: money moved FROM goal TO unallocated
-                    // Reverse old: goal += oldAmount, unallocatedFunds -= oldAmount
-                    // Apply new: goal -= newAmount, unallocatedFunds += newAmount
-                    // Net: goal += oldAmount - newAmount = +difference (difference is negative)
-                    // Net: unallocatedFunds -= oldAmount + newAmount = -difference
                     goals[goalIndex].current = goals[goalIndex].current + difference;
                     unallocatedFunds = unallocatedFunds - difference;
                 } else {
-                    // "Removed completely" - no unallocated funds involved
                     goals[goalIndex].current = goals[goalIndex].current - difference;
                 }
             }
@@ -302,7 +299,7 @@ function deleteHistoryAction(actionId) { //Delete history
     
     const action = actionHistory[actionIndex];
     
-    // Check if trying to delete income and there are expenses
+    // Check if trying to delete income, there are expenses
     if (action.type === 'income') {
         const hasExpenses = actionHistory.some(a => a && a.type === 'expense');
         if (hasExpenses) {
@@ -315,7 +312,7 @@ function deleteHistoryAction(actionId) { //Delete history
         return;
     }
     
-    // Reverse the action's effect
+    // Reverse
     switch(action.type) {
         case 'income':
             Object.keys(allocationTemplate).forEach(cat => {
@@ -328,38 +325,28 @@ function deleteHistoryAction(actionId) { //Delete history
             categories[action.category] += action.amount;
             break;
         case 'adjustment':
-            // Check if this adjustment affected unallocated funds
+            // Check if unalloc affected
             if (action.description.includes('from unallocated funds')) {
-                // Positive amount: money moved FROM unallocated TO category
-                // Reversing: move money back FROM category TO unallocated
                 categories[action.category] -= action.amount;
                 unallocatedFunds += action.amount;
             } else if (action.description.includes('to unallocated funds')) {
-                // Negative amount: money moved FROM category TO unallocated
-                // Reversing: move money back FROM unallocated TO category
                 categories[action.category] += Math.abs(action.amount);
                 unallocatedFunds -= Math.abs(action.amount);
             } else {
-                // "Removed completely" - no unallocated funds involved
                 categories[action.category] -= action.amount;
             }
             break;
         case 'goal':
             const goalIndex = goals.findIndex(g => g.name === action.category);
             if (goalIndex >= 0) {
-                // Check if this goal action affected unallocated funds
+                // Check
                 if (action.description.includes('from unallocated funds')) {
-                    // Positive amount: money moved FROM unallocated TO goal
-                    // Reversing: move money back FROM goal TO unallocated
                     goals[goalIndex].current -= action.amount;
                     unallocatedFunds += action.amount;
                 } else if (action.description.includes('to unallocated funds')) {
-                    // Negative amount: money moved FROM goal TO unallocated
-                    // Reversing: move money back FROM unallocated TO goal
                     goals[goalIndex].current += Math.abs(action.amount);
                     unallocatedFunds -= Math.abs(action.amount);
                 } else {
-                    // "Removed completely" - no unallocated funds involved
                     goals[goalIndex].current -= action.amount;
                 }
             }
@@ -371,7 +358,7 @@ function deleteHistoryAction(actionId) { //Delete history
     updateDisplay();
 }
 
-function clearHistory() { //Clear history
+function clearHistory() {
     if (!confirm('Are you sure you want to clear all history? This cannot be undone.')) {
         return;
     }
@@ -380,7 +367,7 @@ function clearHistory() { //Clear history
     updateDisplay();
 }
 
-// Function to adjust category sum manual
+// adjust category sum manual
 function adjustSumManual(cat, isAdd) {
     const input = document.getElementById(`adjust-${cat}`);
     const amount = parseFloat(input.value);
@@ -441,19 +428,19 @@ function handleRemoveAction(action) {
         input = document.getElementById(`adjust-goal-${goalIndex}`);
         
         if (action === 'allocate') {
-            // Move to unallocated funds
+            // Move to unalloc
             goals[goalIndex].current -= amount;
             unallocatedFunds += amount;
             addActionToHistory('goal', `Moved $${amount.toFixed(2)} from goal to unallocated funds`, -amount, goalName);
         } else if (action === 'remove') {
-            // Remove completely
+            // Remove
             goals[goalIndex].current -= amount;
             addActionToHistory('goal', `Removed $${amount.toFixed(2)} completely from goal`, -amount, goalName);
         } else if (action === 'spent') {
             // Record as expense
             goals[goalIndex].current -= amount;
             addActionToHistory('expense', `Expense: $${amount.toFixed(2)}`, amount, goalName);
-            // Also add to expenses array for consistency
+            // Also add to expenses array
             expenses.push({ amount, category: goalName, date: new Date().toISOString().split('T')[0], interval: 0 });
         }
     } else if (pendingRemovalType === 'category' && pendingRemovalCategory) {
@@ -461,12 +448,12 @@ function handleRemoveAction(action) {
         input = document.getElementById(`adjust-${cat}`);
         
         if (action === 'allocate') {
-            // Move to unallocated funds
+            // Move to unalloc
             categories[cat] -= amount;
             unallocatedFunds += amount;
             addActionToHistory('adjustment', `Moved $${amount.toFixed(2)} to unallocated funds`, -amount, cat);
         } else if (action === 'remove') {
-            // Remove completely
+            // Remove
             categories[cat] -= amount;
             addActionToHistory('adjustment', `Removed $${amount.toFixed(2)} completely`, -amount, cat);
         } else if (action === 'spent') {
@@ -482,7 +469,7 @@ function handleRemoveAction(action) {
     saveData();
     updateDisplay();
     
-    // Reset pending data and close modal
+    // Reset data, close modal
     pendingRemovalCategory = null;
     pendingRemovalGoalIndex = null;
     pendingRemovalAmount = 0;
@@ -490,7 +477,7 @@ function handleRemoveAction(action) {
     removeModalInstance.hide();
 }
 
-// Function to remove category
+// remove cat
 function removeCategory(cat) {
     delete categories[cat];
     delete allocationTemplate[cat];
@@ -498,7 +485,7 @@ function removeCategory(cat) {
     updateDisplay();
 }
 
-// Function to adjust goal amount
+// adjust goal amount
 function adjustGoal(index, isAdd) {
     const input = document.getElementById(`adjust-goal-${index}`);
     const amount = parseFloat(input.value);
@@ -513,7 +500,7 @@ function adjustGoal(index, isAdd) {
             alert(`Insufficient unallocated funds! Available: $${unallocatedFunds.toFixed(2)}`);
             return;
         }
-        // Move from unallocated to goal
+        // from unalloc to goal
         unallocatedFunds -= amount;
         goals[index].current += amount;
         addActionToHistory('goal', `Added $${amount.toFixed(2)} from unallocated funds`, amount, goals[index].name);
@@ -521,14 +508,13 @@ function adjustGoal(index, isAdd) {
         saveData();
         updateDisplay();
     }
-    // Remove money from goal - use modal
+    // Remove money from goal
     else {
         if (goals[index].current < amount) {
             alert(`Insufficient funds in ${goals[index].name}! Available: $${goals[index].current.toFixed(2)}`);
             return;
         }
         
-        // Store pending action data and show modal
         pendingRemovalGoalIndex = index;
         pendingRemovalCategory = null;
         pendingRemovalAmount = amount;
@@ -543,7 +529,7 @@ function adjustGoal(index, isAdd) {
     }
 }
 
-// Function to remove goal
+// remove goal
 function removeGoal(index) {
     if (index < 0 || index >= goals.length) {
         return;
@@ -554,33 +540,31 @@ function removeGoal(index) {
     const goalCurrent = goal.current;
     const goalTarget = goal.target;
     
-    // Ask for confirmation
     if (!confirm(`Are you sure you want to delete the goal "${goalName}"?`)) {
         return;
     }
     
     // Handle money in the goal
     if (goalCurrent > 0) {
-        // If goal sum is met (current >= target), log as expense
+        // If goal sum is met, log as expense
         if (goalCurrent >= goalTarget) {
-            // Remove money and log as expense
+            // log as expense
             addActionToHistory('expense', `Goal completed and removed: $${goalCurrent.toFixed(2)}`, goalCurrent, goalName);
-            // Also add to expenses array for consistency
+            // add to expenses array for consistency
             expenses.push({ amount: goalCurrent, category: goalName, date: new Date().toISOString().split('T')[0], interval: 0 });
         } else {
-            // Goal not met, add money back to unallocated funds
+            // Goal not met, unalloc funds
             unallocatedFunds += goalCurrent;
             addActionToHistory('goal', `Removed goal "${goalName}" - $${goalCurrent.toFixed(2)} returned to unallocated funds`, -goalCurrent, goalName);
         }
     }
     
-    // Remove the goal
     goals.splice(index, 1);
     saveData();
     updateDisplay();
 }
 
-// Function to setup allocation form listener
+// setup alloc
 function setupAllocationForm() {
     document.getElementById('allocationForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -595,10 +579,6 @@ function setupAllocationForm() {
             alert('Percentages cannot exceed 100%. Current sum: ' + (total * 100).toFixed(1) + '%');
             return;
         }
-        // if (Math.abs(total - 1.0) > 0.01) { // Allow small tolerance
-        //     alert('Percentages must sum to 100%. Current sum: ' + (total * 100).toFixed(1) + '%');
-        //     return;
-        // }
         saveData();
         updateDisplay();
         alert('Allocation template updated!' + ((1 - total) * 100).toFixed(1) + '% will go to unallocated funds.');
@@ -634,16 +614,14 @@ document.getElementById('incomeForm').addEventListener('submit', function(e) {
     document.getElementById('incomeAmount').value = 0; // Clear input
 });
 
-// Function to update unallocated funds
+// update unalloc
 function updateUnallocatedFunds() {
     const unallocatedDisplay = document.getElementById('unallocatedDisplay');
     const unallocatedDisplayGoals = document.getElementById('unallocatedDisplayGoals');
     
-    // Get the new value from either input (they should be in sync)
     const newValue = parseFloat(unallocatedDisplay ? unallocatedDisplay.value : unallocatedDisplayGoals.value);
     
     if (isNaN(newValue)) {
-        // Reset to current value if invalid
         if (unallocatedDisplay) unallocatedDisplay.value = unallocatedFunds.toFixed(2);
         if (unallocatedDisplayGoals) unallocatedDisplayGoals.value = unallocatedFunds.toFixed(2);
         alert('Please enter a valid number.');
@@ -654,16 +632,14 @@ function updateUnallocatedFunds() {
     const difference = newValue - oldValue;
     
     if (difference === 0) {
-        // No change, reset to current value
         if (unallocatedDisplay) unallocatedDisplay.value = unallocatedFunds.toFixed(2);
         if (unallocatedDisplayGoals) unallocatedDisplayGoals.value = unallocatedFunds.toFixed(2);
         return;
     }
     
-    // Update unallocated funds
     unallocatedFunds = newValue;
     
-    // Log to history
+    // history
     if (difference > 0) {
         addActionToHistory('adjustment', `Added $${difference.toFixed(2)} to unallocated funds`, difference, 'Unallocated Funds');
     } else {
@@ -709,13 +685,18 @@ document.getElementById('goalForm').addEventListener('submit', function(e) {
 
 // Chart
 function updateChart() {
-    // Check if Chart.js is loaded
+    // Check
     if (typeof Chart === 'undefined') {
         console.error('Chart.js is not loaded');
         return;
     }
+
+    const colors = colorPalettes[currentPalette];
+    const incomeExpenseColors = currentPalette === 'default' 
+        ? ['#4BC0C0', '#FF6384'] 
+        : [colors[3], colors[0]];
     
-    // Category Balance Doughnut Chart
+    // Doughnut Chart
     const balanceCanvas = document.getElementById('balanceChart');
     if (!balanceCanvas) {
         console.warn('balanceChart canvas not found');
@@ -735,7 +716,6 @@ function updateChart() {
         
         const categoryLabels = Object.keys(categories);
         const categoryValues = Object.values(categories);
-        const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'];
         
         balanceChartInstance = new Chart(ctx, {
             type: 'doughnut',
@@ -785,7 +765,7 @@ function updateChart() {
             incomeExpenseChartInstance.destroy();
         }
         
-        // Only count income and expense types, explicitly exclude adjustments, transfers, and goals
+        // Only count income and expenses
         const totalIncome = actionHistory
             .filter(a => a && a.type === 'income')
             .reduce((sum, a) => sum + (a.amount || 0), 0);
@@ -794,8 +774,7 @@ function updateChart() {
             .filter(a => a && a.type === 'expense')
             .reduce((sum, a) => sum + (a.amount || 0), 0);
         
-        // Always show chart, even with zero values
-        const incomeExpenseColors = ['#4BC0C0', '#FF6384'];
+        // Always show chart
         incomeExpenseChartInstance = new Chart(ctx2, {
             type: 'doughnut',
             data: {
@@ -855,6 +834,14 @@ document.getElementById('addCategoryForm').addEventListener('submit', function(e
         alert('Category name is invalid or already exists.');
     }
 });
+
+// change palette
+function changeColorPalette() {
+    const select = document.getElementById('paletteSelect');
+    currentPalette = select.value;
+    localStorage.setItem('colorPalette', currentPalette);
+    updateChart();
+}
 
 // Load on start - wait for DOM to be ready
 if (document.readyState === 'loading') {
