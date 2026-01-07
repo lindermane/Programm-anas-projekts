@@ -23,7 +23,7 @@
 
 <body>
 
-    <button class="sideabr" onclick="toggleSidebar()" aria-label="Toggle menu">
+    <button class="sideabr-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
         <span></span>
         <span></span>
         <span></span>
@@ -31,174 +31,177 @@
 
     <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-    <div class="container mt-4">
+    <div class="page-wrapper">
 
-        <h1>Budget Planner</h1>
+        <div class="container mt-4">
 
-        <nav class="sidebar-nav" id="sidebarNav">
-            <div class="sidebar-content">
-                <ul class="nav flex-column">
-                    <li class="nav-item"><a class="nav-link" href="#income" onclick="toggleSidebar()">Income</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#categories" onclick="toggleSidebar()">Categories</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#allocation" onclick="toggleSidebar()">Allocation</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#goals" onclick="toggleSidebar()">Goals</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#charts" onclick="toggleSidebar()">Charts</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#history" onclick="toggleSidebar()">History</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#currency" onclick="toggleSidebar()">Currency</a></li>
-                </ul>
-            </div>
-        </nav>
+            <h1>Budget Planner</h1>
 
-        <section id="income" class="mt-4">
-            <h2>Add Income</h2>
-            <form id="incomeForm">
-                <div class="mb-3">
-                    <label for="incomeAmount" class="form-label">Amount</label>
-                    <input type="number" step="0.01" class="form-control" id="incomeAmount" required>
+            <nav class="sidebar-nav" id="sidebarNav">
+                <div class="sidebar-content">
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a class="nav-link" href="#income" onclick="toggleSidebar()">Income</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#categories" onclick="toggleSidebar()">Categories</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#allocation" onclick="toggleSidebar()">Allocation</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#goals" onclick="toggleSidebar()">Goals</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#charts" onclick="toggleSidebar()">Charts</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#history" onclick="toggleSidebar()">History</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#currency" onclick="toggleSidebar()">Currency</a></li>
+                    </ul>
                 </div>
-                <button type="submit" class="btn btn-primary">Add Income</button>
-            </form>
-        </section>
+            </nav>
 
-        <section id="categories" class="mt-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2>Categories</h2>
-            <div class="alert alert-info mb-0 py-2 px-3" style="font-size: 1.1rem;">
-                Unallocated Funds: $<input type="number" step="0.01" class="form-control form-control-sm d-inline-block" id="unallocatedDisplay" value="0.00" style="width: 120px; display: inline-block;" onchange="updateUnallocatedFunds()">
-            </div>
-            </div>
-            <div id="categoryList"></div>
-            <form id="addCategoryForm" class="mt-3">
-                <div class="mb-3">
-                    <label for="newCategoryName" class="form-label">New Category Name</label>
-                    <input type="text" class="form-control" id="newCategoryName" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Add Category</button>
-            </form>
-            <button class="btn btn-secondary mt-3" onclick="transferFunds()">Transfer Funds</button>
-        </section>
-
-        <section id="allocation" class="mt-4">
-            <h2>Allocation Template</h2>
-            <p>Set the percentage of your income to allocate to each category (can be less than 100%, remainder goes to Unallocated Funds).</p>
-            <div id="allocationContainer">
-                <form id="allocationForm">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="transportAlloc" class="form-label">Transport %</label>
-                            <input type="number" step="0.1" min="0" max="100" class="form-control" id="transportAlloc" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="foodAlloc" class="form-label">Food %</label>
-                            <input type="number" step="0.1" min="0" max="100" class="form-control" id="foodAlloc" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="entertainmentAlloc" class="form-label">Entertainment %</label>
-                            <input type="number" step="0.1" min="0" max="100" class="form-control" id="entertainmentAlloc" required>
-                        </div>
+            <section id="income" class="mt-4">
+                <h2>Add Income</h2>
+                <form id="incomeForm">
+                    <div class="mb-3">
+                        <label for="incomeAmount" class="form-label">Amount</label>
+                        <input type="number" step="0.01" class="form-control" id="incomeAmount" required>
                     </div>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="transportAlloc" class="form-label">Transport %</label>
-                            <input type="number" step="0.1" min="0" max="100" class="form-control" id="transportAlloc" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="personalAlloc" class="form-label">Personal %</label>
-                            <input type="number" step="0.1" min="0" max="100" class="form-control" id="personalAlloc" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="savingsAlloc" class="form-label">Savings %</label>
-                            <input type="number" step="0.1" min="0" max="100" class="form-control" id="savingsAlloc" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="billsAlloc" class="form-label">Bills %</label>
-                            <input type="number" step="0.1" min="0" max="100" class="form-control" id="billsAlloc" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Update Allocation</button>
+                    <button type="submit" class="btn btn-primary">Add Income</button>
                 </form>
-            </div>
-        </section>
+            </section>
 
-        <section id="goals" class="mt-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2>Goals</h2>
+            <section id="categories" class="mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2>Categories</h2>
                 <div class="alert alert-info mb-0 py-2 px-3" style="font-size: 1.1rem;">
-                    Unallocated Funds: $<input type="number" step="0.01" class="form-control form-control-sm d-inline-block" id="unallocatedDisplayGoals" value="0.00" style="width: 120px; display: inline-block;" onchange="updateUnallocatedFunds()">
+                    Unallocated Funds: $<input type="number" step="0.01" class="form-control form-control-sm d-inline-block" id="unallocatedDisplay" value="0.00" style="width: 120px; display: inline-block;" onchange="updateUnallocatedFunds()">
                 </div>
-            </div>
-            <form id="goalForm" class="mt-3">
-                <div class="mb-3">
-                    <label for="goalName" class="form-label">Goal Name</label>
-                    <input type="text" class="form-control" id="goalName" required>
                 </div>
-                <div class="mb-3">
-                    <label for="goalAmount" class="form-label">Target Amount</label>
-                    <input type="number" step="0.01" class="form-control" id="goalAmount" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Add Goal</button>
-            </form>
-            <div id="goalList"></div>
-        </section>
+                <div id="categoryList"></div>
+                <form id="addCategoryForm" class="mt-3">
+                    <div class="mb-3">
+                        <label for="newCategoryName" class="form-label">New Category Name</label>
+                        <input type="text" class="form-control" id="newCategoryName" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Category</button>
+                </form>
+                <button class="btn btn-secondary mt-3" onclick="transferFunds()">Transfer Funds</button>
+            </section>
 
-        <section id="history" class="mt-4">
-            <h2>Action History</h2>
-            <div class="mb-3">
-                <button class="btn btn-danger btn-sm" onclick="clearHistory()">Clear All History</button>
-            </div>
-            <div id="historyList" class="history-container"></div>
-        </section>
-
-        <section id="charts" class="mt-4">
-            <div class="d-flex justify-content-between align-items-center mb-3"></div>
-                <h2>Charts</h2>
-                <div class="color-palette-selector">
-                <label for="paletteSelect" class="form-label me-2 mb-0">Color Palette:</label>
-                <select id="paletteSelect" class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="changeColorPalette()">
-                    <option value="default">Default</option>
-                    <option value="pastel">Pastel</option>
-                    <option value="vibrant">Vibrant</option>
-                    <option value="earth">Earth</option>
-                    <option value="ocean">Ocean</option>
-                    <option value="sunset">Sunset</option>
-                </select>
+            <section id="allocation" class="mt-4">
+                <h2>Allocation Template</h2>
+                <p>Set the percentage of your income to allocate to each category (can be less than 100%, remainder goes to Unallocated Funds).</p>
+                <div id="allocationContainer">
+                    <form id="allocationForm">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="transportAlloc" class="form-label">Transport %</label>
+                                <input type="number" step="0.1" min="0" max="100" class="form-control" id="transportAlloc" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="foodAlloc" class="form-label">Food %</label>
+                                <input type="number" step="0.1" min="0" max="100" class="form-control" id="foodAlloc" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="entertainmentAlloc" class="form-label">Entertainment %</label>
+                                <input type="number" step="0.1" min="0" max="100" class="form-control" id="entertainmentAlloc" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="transportAlloc" class="form-label">Transport %</label>
+                                <input type="number" step="0.1" min="0" max="100" class="form-control" id="transportAlloc" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="personalAlloc" class="form-label">Personal %</label>
+                                <input type="number" step="0.1" min="0" max="100" class="form-control" id="personalAlloc" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="savingsAlloc" class="form-label">Savings %</label>
+                                <input type="number" step="0.1" min="0" max="100" class="form-control" id="savingsAlloc" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="billsAlloc" class="form-label">Bills %</label>
+                                <input type="number" step="0.1" min="0" max="100" class="form-control" id="billsAlloc" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Allocation</button>
+                    </form>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <h4>Category balance</h4>
-                    <div class="chart-container">
-                        <canvas id="balanceChart"></canvas>
+            </section>
+
+            <section id="goals" class="mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2>Goals</h2>
+                    <div class="alert alert-info mb-0 py-2 px-3" style="font-size: 1.1rem;">
+                        Unallocated Funds: $<input type="number" step="0.01" class="form-control form-control-sm d-inline-block" id="unallocatedDisplayGoals" value="0.00" style="width: 120px; display: inline-block;" onchange="updateUnallocatedFunds()">
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <h4>Income vs Expenses</h4>
-                    <div class="chart-container">
-                        <canvas id="incomeExpenseChart"></canvas>
+                <form id="goalForm" class="mt-3">
+                    <div class="mb-3">
+                        <label for="goalName" class="form-label">Goal Name</label>
+                        <input type="text" class="form-control" id="goalName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="goalAmount" class="form-label">Target Amount</label>
+                        <input type="number" step="0.01" class="form-control" id="goalAmount" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Goal</button>
+                </form>
+                <div id="goalList"></div>
+            </section>
+
+            <section id="history" class="mt-4">
+                <h2>Action History</h2>
+                <div class="mb-3">
+                    <button class="btn btn-danger btn-sm" onclick="clearHistory()">Clear All History</button>
+                </div>
+                <div id="historyList" class="history-container"></div>
+            </section>
+
+            <section id="charts" class="mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3"></div>
+                    <h2>Charts</h2>
+                    <div class="color-palette-selector">
+                        <label for="paletteSelect" class="form-label me-2 mb-0">Color Palette:</label>
+                        <select id="paletteSelect" class="form-select form-select-sm" style="width: auto; display: inline-block;" onchange="changeColorPalette()">
+                            <option value="default">Default</option>
+                            <option value="pastel">Pastel</option>
+                            <option value="vibrant">Vibrant</option>
+                            <option value="earth">Earth</option>
+                            <option value="ocean">Ocean</option>
+                            <option value="sunset">Sunset</option>
+                        </select>
                     </div>
                 </div>
-            </div>
-        </section>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Category balance</h4>
+                        <div class="chart-container">
+                            <canvas id="balanceChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Income vs Expenses</h4>
+                        <div class="chart-container">
+                            <canvas id="incomeExpenseChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-        <section id="currency" class="mt-4">
-            <h2>Currency Converter</h2>
-            <form id="currencyForm">
-                <div class="mb-3">
-                    <label for="convertAmount" class="form-label">Amount</label>
-                    <input type="number" step="0.01" class="form-control" id="convertAmount" required>
-                </div>
-                <div class="mb-3">
-                    <label for="fromCurrency" class="form-label">From Currency</label>
-                    <input type="text" class="form-control" id="fromCurrency" value="USD" required>
-                </div>
-                <div class="mb-3">
-                    <label for="toCurrency" class="form-label">To Currency</label>
-                    <input type="text" class="form-control" id="toCurrency" value="EUR" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Convert</button>
-            </form>
-            <div id="conversionResult"></div>
-        </section>
+            <section id="currency" class="mt-4">
+                <h2>Currency Converter</h2>
+                <form id="currencyForm">
+                    <div class="mb-3">
+                        <label for="convertAmount" class="form-label">Amount</label>
+                        <input type="number" step="0.01" class="form-control" id="convertAmount" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fromCurrency" class="form-label">From Currency</label>
+                        <input type="text" class="form-control" id="fromCurrency" value="USD" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="toCurrency" class="form-label">To Currency</label>
+                        <input type="text" class="form-control" id="toCurrency" value="EUR" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Convert</button>
+                </form>
+                <div id="conversionResult"></div>
+            </section>
+        </div>
     </div>
 
     <div class="modal fade" id="removeModal" tabindex="-1">

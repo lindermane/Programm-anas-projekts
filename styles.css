@@ -1,5 +1,13 @@
 body {
     font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.page-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100px;
 }
 
 .chart-container {
@@ -9,11 +17,6 @@ body {
 }
 
 #balanceChart {
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-#incomeExpenseChart {
     max-width: 400px;
     margin: 0 auto;
 }
@@ -90,30 +93,33 @@ body {
     margin: 0 auto;
 }
 
-.sidebar {
+.sidebar-toggle {
     position: fixed;
     right: 20px;
     top: 20px;
-    width: 40px;
-    height: 40px;
+    width: 45px;
+    height: 45px;
     background-color: #007bff;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
-    z-index: 10;
+    z-index: 1001;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 8px;
+    padding: 10px;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
 }
 
-.sidebar:hover {
+.sidebar-toggle:hover {
     background-color: #0056b3;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+    transform: translateY(-2px);
 }
 
-.sidebar span {
+.sidebar-toggle span {
     display: block;
     width: 25px;
     height: 3px;
@@ -150,6 +156,7 @@ body {
     overflow-y: auto;
     padding-top: 20px;
     transition: right 0.3s ease;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-nav.active {
@@ -194,4 +201,16 @@ body {
         margin-top: 10px;
         width: 100%;
     }
+
+    .sidebar-toggle {
+        width: 40px;
+        height: 40px;
+        right: 15px;
+        top: 15px;
+    }
+    
+    .sidebar-toggle span {
+        width: 22px;
+    }
 }
+

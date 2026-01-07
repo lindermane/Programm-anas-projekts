@@ -113,7 +113,7 @@ function updateDisplay() {
         <div class="d-flex justify-content-between align-items-center mb-2">
             <span>${cat}: ${categories[cat].toFixed(2)}</span>
             <div class="d-flex align-items-center">
-                <input type="number" step="0.01" class="form-control form-control-sm me-1" id="adjust-${cat}" placeholder="Amount" style="width: 100px;">
+                <input type="number" step="0.01" min="0" class="form-control form-control-sm me-1" id="adjust-${cat}" placeholder="Amount" style="width: 100px;">
                 <button class="btn btn-sm btn-danger me-1" onclick="adjustSumManual('${cat}', false)">-</button>
                 <button class="btn btn-sm btn-success me-1" onclick="adjustSumManual('${cat}', true)">+</button>
                 <button class="btn btn-sm btn-warning" onclick="removeCategory('${cat}')">Remove</button>
@@ -149,7 +149,7 @@ function updateDisplay() {
         <div class="d-flex justify-content-between align-items-center mb-2">
                 <span>${goal.name}: ${goal.current.toFixed(2)} / ${goal.target.toFixed(2)}</span>
                 <div class="d-flex align-items-center">
-                    <input type="number" step="0.01" class="form-control form-control-sm me-1" id="adjust-goal-${index}" placeholder="Amount" style="width: 100px;">
+                    <input type="number" step="0.01" min="0" class="form-control form-control-sm me-1" id="adjust-goal-${index}" placeholder="Amount" style="width: 100px;">
                     <button class="btn btn-sm btn-danger me-1" onclick="adjustGoal(${index}, false)">-</button>
                     <button class="btn btn-sm btn-success me-1" onclick="adjustGoal(${index}, true)">+</button>
                     <button class="btn btn-sm btn-warning" onclick="removeGoal(${index})">Remove</button>
@@ -209,7 +209,7 @@ function updateHistoryDisplay() { // History display
                         </div>
                         <div class="d-flex align-items-center">
                             <strong class="me-3">${sign}$${Math.abs(action.amount).toFixed(2)}</strong>
-                            <input type="number" step="0.01" class="form-control form-control-sm me-1" id="edit-history-${action.id}" value="${action.amount}" style="width: 100px;">
+                            <input type="number" step="0.01" min="0" class="form-control form-control-sm me-1" id="edit-history-${action.id}" value="${action.amount}" style="width: 100px;">
                             <button class="btn btn-sm btn-primary me-1" onclick="editHistoryAction(${action.id})">Update</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteHistoryAction(${action.id})">Delete</button>
                         </div>
@@ -646,7 +646,7 @@ function updateUnallocatedFunds() {
         addActionToHistory('adjustment', `Removed $${Math.abs(difference).toFixed(2)} from unallocated funds`, difference, 'Unallocated Funds');
     }
     
-    // Sync both inputs
+    // Sync
     if (unallocatedDisplay) unallocatedDisplay.value = unallocatedFunds.toFixed(2);
     if (unallocatedDisplayGoals) unallocatedDisplayGoals.value = unallocatedFunds.toFixed(2);
     
