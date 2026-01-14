@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Budget Planner</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         const originalError = console.error;
         console.error = function(...args) {
@@ -23,7 +24,7 @@
 
 <body>
 
-    <button class="sideabr-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
         <span></span>
         <span></span>
         <span></span>
@@ -66,7 +67,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Categories</h2>
                 <div class="alert alert-info mb-0 py-2 px-3" style="font-size: 1.1rem;">
-                    Unallocated Funds: $<input type="number" step="0.01" class="form-control form-control-sm d-inline-block" id="unallocatedDisplay" value="0.00" style="width: 120px; display: inline-block;" onchange="updateUnallocatedFunds()">
+                    Uncategorized Funds: $<input type="number" step="0.01" class="form-control form-control-sm d-inline-block" id="unallocatedDisplay" value="0.00" style="width: 120px; display: inline-block;" onchange="updateUnallocatedFunds()">
                 </div>
                 </div>
                 <div id="categoryList"></div>
@@ -81,8 +82,8 @@
             </section>
 
             <section id="allocation" class="mt-4">
-                <h2>Allocation Template</h2>
-                <p>Set the percentage of your income to allocate to each category (can be less than 100%, remainder goes to Unallocated Funds).</p>
+                <h2>Category Template</h2>
+                <p>Divide your income. If the total % doesn't come to 100, the rest will be put in uncategorized funds.</p>
                 <div id="allocationContainer">
                     <form id="allocationForm">
                         <div class="row">
@@ -117,7 +118,7 @@
                                 <input type="number" step="0.1" min="0" max="100" class="form-control" id="billsAlloc" required>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">Update Allocation</button>
+                        <button type="submit" class="btn btn-primary">Update division</button>
                     </form>
                 </div>
             </section>
@@ -126,7 +127,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Goals</h2>
                     <div class="alert alert-info mb-0 py-2 px-3" style="font-size: 1.1rem;">
-                        Unallocated Funds: $<input type="number" step="0.01" class="form-control form-control-sm d-inline-block" id="unallocatedDisplayGoals" value="0.00" style="width: 120px; display: inline-block;" onchange="updateUnallocatedFunds()">
+                        Uncategorized Funds: $<input type="number" step="0.01" class="form-control form-control-sm d-inline-block" id="unallocatedDisplayGoals" value="0.00" style="width: 120px; display: inline-block;" onchange="updateUnallocatedFunds()">
                     </div>
                 </div>
                 <form id="goalForm" class="mt-3">
@@ -217,7 +218,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="handleRemoveAction('allocate')">Move to Unallocated</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="handleRemoveAction('allocate')">Move to Uncategorized</button>
                     <button type="button" class="btn btn-danger" data-bs-dismiss="modal" onclick="handleRemoveAction('remove')">Remove Completely</button>
                     <button type="button" class="btn btn-warning" data-bs-dismiss="modal" onclick="handleRemoveAction('spent')">Spent</button>
                 </div>

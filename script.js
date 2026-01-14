@@ -4,13 +4,23 @@ let categories = {
     Food: 0,
     Entertainment: 0,
     Personal: 0,
-    Bills: 0
+    Bills: 0,
+    Savings: 0
 };
 let goals = [];
 let expenses = [];
 let allocationTemplate = {};
 let unallocatedFunds = 0;
 let actionHistory = [];
+
+let categoryBudgets = {
+    Transport: 500,
+    Food: 800,
+    Entertainment: 300,
+    Personal: 400,
+    Bills: 1000,
+    Savings: 500
+};
 
 let balanceChartInstance = null;
 let incomeExpenseChartInstance = null;
@@ -22,6 +32,34 @@ const colorPalettes = {
     earth: ['#8B4513', '#D2691E', '#CD853F', '#DEB887', '#F4A460', '#BC8F8F', '#A0522D', '#D2B48C'],
     ocean: ['#006994', '#1E90FF', '#4169E1', '#0077BE', '#40E0D0', '#00CED1', '#5F9EA0', '#4682B4'],
     sunset: ['#FF6B6B', '#FFA07A', '#FFD93D', '#FF8243', '#C73E1D', '#E94B3C', '#F4A261', '#E76F51']
+};
+
+const categoryIcons = {
+    Transport: 'fa-car',
+    Food: 'fa-utensils',
+    Entertainment: 'fa-gamepad',
+    Personal: 'fa-user',
+    Bills: 'fa-file-invoice-dollar',
+    Savings: 'fa-piggy-bank',
+    Shopping: 'fa-shopping-bag',
+    Health: 'fa-heartbeat',
+    Education: 'fa-graduation-cap',
+    Travel: 'fa-plane',
+    Other: 'fa-ellipsis-h'
+};
+
+const categoryColors = {
+    Transport: '#4ade80',
+    Food: '#fb923c',
+    Entertainment: '#3b82f6',
+    Personal: '#8b5cf6',
+    Bills: '#ef4444',
+    Savings: '#10b981',
+    Shopping: '#f59e0b',
+    Health: '#ec4899',
+    Education: '#6366f1',
+    Travel: '#14b8a6',
+    Other: '#6b7280'
 };
 
 let currentPalette = 'default';
